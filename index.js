@@ -1,73 +1,88 @@
-console.log("Hello, World");
+console.log("Phonebook Server");
 import express from "express";
 const app = express();
 
 app.use(express.json());
 
-let notes = [
+let persons = [
   {
     id: "1",
-    content: "HTML is easy",
-    important: true,
+    name: "Arto Hellas",
+    number: "040-123456",
   },
   {
     id: "2",
-    content: "Browser can execute only JavaScript",
-    important: false,
+    name: "Ada Lovelace",
+    number: "39-44-5323523",
   },
   {
     id: "3",
-    content: "GET and POST are the most important methods of HTTP protocol",
-    important: true,
+    name: "Dan Abramov",
+    number: "12-43-234345",
+  },
+  {
+    id: "4",
+    name: "Mary Poppendieck",
+    number: "39-23-6423122",
   },
 ];
 
 app.get("/", (req, res) => {
-  res.send("<h1>Hello, World!</h1>");
+  res.send("<h1>Hello, World!</h1><br/><h2>Phonebook Backend</h2>");
 });
 
-app.get("/api/notes", (req, res) => {
-  res.send(notes);
+app.get("/info", (req, res) => {
+  // YYYY-MM-DDTHH:mm:ss.sssZ
+  const currentDate = new Date().toLocaleString();
+  res.send(
+    `<div> <p>This Phonebook has info for ${persons.length} people</p><p> ${currentDate} </p></div>`
+  );
 });
 
-app.get("/api/notes/:id", (req, res) => {
+app.get("/api/persons", (req, res) => {
+  res.send(persons);
+});
+
+app.get("/api/persons/:id", (req, res) => {
   const id = req.params.id;
-  const note = notes.find((note) => note.id === id);
+  const person = persons.find((person) => person.id === id);
 
-  if (note) {
-    res.send(note);
+  if (person) {
+    res.send(person);
   } else {
-    res.statusMessage = "No note with that id found";
+    res.statusMessage = "No Person with that id found";
     res.status(404).end();
   }
 });
 
-app.delete("/api/notes/:id", (req, res) => {
+app.delete("/api/persons/:id", (req, res) => {
   const id = req.params.id;
-  notes = notes.filter((note) => note.id !== id);
+  persons = persons.filter((person) => person.id !== id);
   res.status(204).end();
 });
 
 const generateID = () => {
   const maxID =
-    notes.length > 0 ? Math.max(...notes.map((note) => Number(note.id))) : 0;
+    persons.length > 0
+      ? Math.max(...persons.map((person) => Number(person.id)))
+      : 0;
   return String(maxID + 1);
 };
 
-app.post("/api/notes", (req, res) => {
+app.post("/api/persons", (req, res) => {
   const body = req.body;
 
-  if (!body.content) {
-    return res.status(400).json({ error: "Content is Missing" });
+  if (!body.name || !body.number) {
+    return res.status(400).json({ error: "Name and Number are required" });
   }
-  const note = {
-    content: body.content,
-    important: Boolean(body.important) || false,
+  const person = {
+    name: body.name,
+    number: body.number,
     id: generateID(),
   };
-  notes = notes.concat(note);
-  res.json(note);
-  console.log(note);
+  persons = persons.concat(person);
+  res.json(person);
+  console.log(person);
 });
 
 const PORT = 3001;
