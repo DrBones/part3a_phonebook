@@ -1,9 +1,20 @@
 console.log("Phonebook Server");
 import express from "express";
 import { nanoid } from "nanoid";
+import morgan from "morgan";
+
 const app = express();
 
+// const requestLogger = (request, response, next) => {
+//   console.log("Method:", request.method);
+//   console.log("Path:  ", request.path);
+//   console.log("Body:  ", request.body);
+//   console.log("---");
+//   next();
+// };
+app.use(morgan("tiny"));
 app.use(express.json());
+// app.use(requestLogger);
 
 let persons = [
   {
@@ -87,7 +98,6 @@ app.post("/api/persons", (req, res) => {
   };
   persons = persons.concat(person);
   res.json(person);
-  console.log(person);
 });
 
 const PORT = 3001;
