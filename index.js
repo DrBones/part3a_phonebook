@@ -1,5 +1,6 @@
 console.log("Phonebook Server");
 import express from "express";
+import { nanoid } from "nanoid";
 const app = express();
 
 app.use(express.json());
@@ -75,10 +76,14 @@ app.post("/api/persons", (req, res) => {
   if (!body.name || !body.number) {
     return res.status(400).json({ error: "Name and Number are required" });
   }
+
+  if (persons.find((person) => person.name === body.name)) {
+    return res.status(400).json({ error: "This Person already exists" });
+  }
   const person = {
     name: body.name,
     number: body.number,
-    id: generateID(),
+    id: nanoid(),
   };
   persons = persons.concat(person);
   res.json(person);
