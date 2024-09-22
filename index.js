@@ -13,6 +13,7 @@ const app = express();
 //   next();
 // };
 app.use(express.json());
+app.use(express.static("dist"));
 // app.use(requestLogger);
 morgan.token("type", function (req, res) {
   return JSON.stringify(req.body);

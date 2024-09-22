@@ -7,7 +7,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "build:ui": "rm -rf dist && cd ../part2b_phonebook_frontend &&/ pn run build && cp -r dist ../part3a_phonebook_backend",
+    "deploy:full": "pn run build:ui && git add . && git commit -m uibuild && git push"
   },
   "keywords": [],
   "author": "",
