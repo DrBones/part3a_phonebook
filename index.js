@@ -1,7 +1,9 @@
 console.log("Phonebook Server");
+import "dotenv/config";
 import express from "express";
 import { nanoid } from "nanoid";
 import morgan from "morgan";
+import Person from "./models/person.js";
 
 const app = express();
 
@@ -15,11 +17,11 @@ const app = express();
 app.use(express.json());
 app.use(express.static("dist"));
 // app.use(requestLogger);
-morgan.token("type", function (req, res) {
+morgan.token("body", function (req, res) {
   return JSON.stringify(req.body);
 });
 app.use(
-  morgan(":method :url :status :res[content-length] - :response-time ms :type")
+  morgan(":method :url :status :res[content-length] - :response-time ms :body")
 );
 
 let persons = [
@@ -33,16 +35,6 @@ let persons = [
     name: "Ada Lovelace",
     number: "39-44-5323523",
   },
-  {
-    id: "3",
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: "4",
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
 ];
 
 app.get("/", (req, res) => {
@@ -52,40 +44,37 @@ app.get("/", (req, res) => {
 app.get("/info", (req, res) => {
   // YYYY-MM-DDTHH:mm:ss.sssZ
   const currentDate = new Date().toLocaleString();
-  res.send(
-    `<div> <p>This Phonebook has info for ${persons.length} people</p><p> ${currentDate} </p></div>`
-  );
+  Person.find({}).then((persons) => {
+    res.send(
+      `<div> <p>This Phonebook has info for ${persons.length} people</p><p> ${currentDate} </p></div>`
+    );
+  });
 });
 
 app.get("/api/persons", (req, res) => {
-  res.send(persons);
+  Person.find({}).then((persons) => res.send(persons));
 });
 
-app.get("/api/persons/:id", (req, res) => {
+app.get("/api/persons/:id", (req, res, next) => {
   const id = req.params.id;
-  const person = persons.find((person) => person.id === id);
-
-  if (person) {
-    res.send(person);
-  } else {
-    res.statusMessage = "No Person with that id found";
-    res.status(404).end();
-  }
+  Person.findById(id)
+    .then((person) => {
+      if (person) {
+        res.send(person);
+      } else {
+        res.statusMessage = "No Person with that id found";
+        res.status(404).end();
+      }
+    })
+    .catch((error) => next(error));
 });
 
-app.delete("/api/persons/:id", (req, res) => {
+app.delete("/api/persons/:id", (req, res, next) => {
   const id = req.params.id;
-  persons = persons.filter((person) => person.id !== id);
-  res.status(204).end();
+  Person.findByIdAndDelete(id)
+    .then((result) => res.status(204).end())
+    .catch((error) => next(error));
 });
-
-const generateID = () => {
-  const maxID =
-    persons.length > 0
-      ? Math.max(...persons.map((person) => Number(person.id)))
-      : 0;
-  return String(maxID + 1);
-};
 
 app.post("/api/persons", (req, res) => {
   const body = req.body;
@@ -94,17 +83,40 @@ app.post("/api/persons", (req, res) => {
     return res.status(400).json({ error: "Name and Number are required" });
   }
 
-  if (persons.find((person) => person.name === body.name)) {
-    return res.status(400).json({ error: "This Person already exists" });
-  }
+  // if (persons.find((person) => person.name === body.name)) {
+  //   return res.status(400).json({ error: "This Person already exists" });
+  // }
+  const person = new Person({
+    name: body.name,
+    number: body.number,
+  });
+  person.save().then((savedPerson) => res.json(savedPerson));
+});
+
+app.put("/api/persons/:id", (req, res, next) => {
+  const body = req.body;
+
   const person = {
     name: body.name,
     number: body.number,
-    id: nanoid(),
   };
-  persons = persons.concat(person);
-  res.json(person);
+
+  Person.findByIdAndUpdate(req.params.id, person, { new: true })
+    .then((updatedPerson) => res.json(updatedPerson))
+    .catch((error) => next(error));
 });
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  }
+
+  next(error);
+};
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
